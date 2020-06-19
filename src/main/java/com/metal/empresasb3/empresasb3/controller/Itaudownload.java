@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -15,6 +16,8 @@ import java.util.List;
 public class Itaudownload {
 
     private HashMap<String, String> tdCollections = new HashMap<String, String>();
+    private ArrayList<String> twoTrKeys = new ArrayList<>();
+    private ArrayList<String> threeTrKeys = new ArrayList<>();
 
     @RequestMapping("/download")
     public String download(){
@@ -35,19 +38,74 @@ public class Itaudownload {
         List<HtmlElement> thElements = page.getByXPath("//div");
         final HtmlElement div = page.querySelector("div#accordionDados");
 
+        addReservedTrKey("Ativo Imobilizado, Investimentos e Intangível");
+        addReservedTrKey("Ativo Total");
+        addReservedTrKey("Património Líquido");
+        addReservedTrKey("Patrimônio Líquido Atribuído à Controladora");
+
+        addReservedTrKey("Receita de Venda");
+        addReservedTrKey("Resultado Bruto");
+        addReservedTrKey("Resultado de Equivalência Patrimonial");
+        addReservedTrKey("Resultado Financeiro");
+        addReservedTrKey("Resultado Líquido das Operações Continuadas");
+        addReservedTrKey("Lucro (Prejuízo) do Período");
+        addReservedTrKey("Lucro (Prejuízo) do Período Atribuído à Controladora");
+
+
+        addReservedTrKey("Atividades Operacionais");
+        addReservedTrKey("Atividades de Investimento");
+        addReservedTrKey("Atividades de Financiamento");
+        addReservedTrKey("Variação Cambial sobre Caixa e Equivalentes");
+        addReservedTrKey("Aumento (Redução) de Caixa e Equivalentes");
+
+        addReservedTrKey("Total de Ações");
+        addReservedTrKey("Quantidade de Ações Ordinárias");
+        addReservedTrKey("Investidores Institucionais");
+        addReservedTrKey("Pessoas Jurídicas");
+        addReservedTrKey("Pessoas Físicas");
+
+        addReservedThreeTrKey("Iupar - Itaú Unibanco Participações S.A.");
+        addReservedThreeTrKey("Blackrock.inc");
+        addReservedThreeTrKey("Itaúsa - Investimentos Itaú S.A.");
+        addReservedThreeTrKey("Outros");
+        addReservedThreeTrKey("Ações Tesouraria");
+        addReservedThreeTrKey("Total");
+
+
         List<HtmlElement> trs = div.getByXPath("//tr");
         trs.stream().forEach(f -> {
             List<HtmlElement> tds = f.getByXPath("//td");
             for(int idx = 0;idx < tds.stream().count(); idx++){
-                tdCollections.put(tds.get(idx).asText(),tds.get(idx+1).asText());
-                idx++;
+                if(twoTrKeys.contains(tds.get(idx).asText())){
+                    tdCollections.put(tds.get(idx).asText(),tds.get(idx+1).asText()+"|"+tds.get(idx+2).asText());
+                    idx++;
+                    idx++;
+                }else if(threeTrKeys.contains(tds.get(idx).asText()) && idx != 110){
+                    tdCollections.put(tds.get(idx).asText(),tds.get(idx+1).asText()+"|"+tds.get(idx+2).asText()+"|"+tds.get(idx+3).asText());
+                    idx++;
+                    idx++;
+                    idx++;
+                }else{
+                    tdCollections.put(tds.get(idx).asText(),tds.get(idx+1).asText());
+                    idx++;
+                }
             }
         });
+
+
 
         tdCollections.put("Códigos de Negociação:",extractNegociationCode(tdCollections.get("Códigos de Negociação:")));
 
         List<HtmlElement> table = div.getPage(). getByXPath("//table");
         return page;
+    }
+
+    private void addReservedTrKey(String key){
+        twoTrKeys.add(key);
+    }
+
+    private void addReservedThreeTrKey(String key){
+        threeTrKeys.add(key);
     }
 
     private String extractNegociationCode(String codes){
